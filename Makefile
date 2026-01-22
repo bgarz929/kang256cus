@@ -31,17 +31,16 @@ CUDA = /usr/local/cuda
 CXXCUDA = /usr/bin/g++
 NVCC = $(CUDA)/bin/nvcc
 
+# ===============================
+# FIXED CUDA ARCH FOR TESLA T4
+# ===============================
+CUDA_ARCH = 75
+
 all: driverquery bsgs
 
 ifdef gpu
-ifndef ccap
 driverquery:
-	. ./detect_cuda.sh
-	ccap=$(shell cat cuda_version.txt)
-else
-driverquery:
-	@echo "Compiling against manually selected CUDA version ${ccap}"
-endif
+	@echo "Compiling for NVIDIA Tesla T4 (sm_$(CUDA_ARCH))"
 else
 driverquery:
 endif
@@ -70,10 +69,20 @@ endif
 ifdef gpu
 ifdef debug
 $(OBJDIR)/GPU/GPUEngine.o: GPU/GPUEngine.cu
-	$(NVCC) -G -maxrregcount=0 --ptxas-options=-v --compile --compiler-options -fPIC -ccbin $(CXXCUDA) -m64 -g -I$(CUDA)/include -gencode=arch=compute_$(ccap),code=sm_$(ccap) -o $(OBJDIR)/GPU/GPUEngine.o -c GPU/GPUEngine.cu
+	$(NVCC) -G -maxrregcount=0 --ptxas-options=-v \
+	--compile --compiler-options -fPIC \
+	-ccbin $(CXXCUDA) -m64 -g \
+	-I$(CUDA)/include \
+	-gencode=arch=compute_$(CUDA_ARCH),code=sm_$(CUDA_ARCH) \
+	-o $(OBJDIR)/GPU/GPUEngine.o -c GPU/GPUEngine.cu
 else
 $(OBJDIR)/GPU/GPUEngine.o: GPU/GPUEngine.cu
-	$(NVCC) -maxrregcount=0 --ptxas-options=-v --compile --compiler-options -fPIC -ccbin $(CXXCUDA) -m64 -O2 -I$(CUDA)/include -gencode=arch=compute_$(ccap),code=sm_$(ccap) -o $(OBJDIR)/GPU/GPUEngine.o -c GPU/GPUEngine.cu
+	$(NVCC) -maxrregcount=0 --ptxas-options=-v \
+	--compile --compiler-options -fPIC \
+	-ccbin $(CXXCUDA) -m64 -O2 \
+	-I$(CUDA)/include \
+	-gencode=arch=compute_$(CUDA_ARCH),code=sm_$(CUDA_ARCH) \
+	-o $(OBJDIR)/GPU/GPUEngine.o -c GPU/GPUEngine.cu
 endif
 endif
 
